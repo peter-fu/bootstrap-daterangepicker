@@ -108,6 +108,19 @@
             this.element.on('click.daterangepicker', $.proxy(this.toggle, this));
         }
 
+        if (this.relatedElement != null) {
+            if (this.relatedElement.is('input')) {
+                this.relatedElement.on({
+                    'click.daterangepicker': $.proxy(this.show, this),
+                    'focus.daterangepicker': $.proxy(this.show, this),
+                    'keyup.daterangepicker': $.proxy(this.updateFromControl, this),
+                    'keydown.daterangepicker': $.proxy(this.keydown, this)
+                });
+            } else {
+                this.relatedElement.on('click.daterangepicker', $.proxy(this.toggle, this));
+            }
+        } 
+
     };
 
     DateRangePicker.prototype = {
@@ -132,7 +145,20 @@
             this.autoApply = false;
             this.singleDatePicker = false;
             this.outsideClickCancel = true;
+            this.separatedInputs = false;
             this.ranges = {};
+
+            if (typeof options.separatedInputs === 'boolean') {
+                this.separatedInputs = options.separatedInputs;
+                if (this.separatedInputs) {
+                    if (options.relatedElement) {
+                        this.relatedElement = $(options.relatedElement);
+                    }
+                    if (this.element.length > 0 && (!this.relatedElement || this.relatedElement.length == 0)) {
+                        throw new Error('Related element must exist in separated-inputs mode.');
+                    }
+                }
+            }
 
             this.opens = 'right';
             if (this.element.hasClass('pull-right'))
@@ -311,20 +337,29 @@
 
             //if no start/end dates set, check if an input element contains initial values
             if (typeof options.startDate === 'undefined' && typeof options.endDate === 'undefined') {
-                if ($(this.element).is('input[type=text]')) {
-                    var val = $(this.element).val(),
-                        split = val.split(this.separator);
+                if (this.element.is('input[type=text]')) {
+                    if (!this.separatedInputs) {
+                        var val = this.element.val(),
+                            split = val.split(this.separator);
 
-                    start = end = null;
+                        start = end = null;
 
-                    if (split.length == 2) {
-                        start = moment(split[0], this.format);
-                        end = moment(split[1], this.format);
-                    } else if (this.singleDatePicker && val !== "") {
-                        start = moment(val, this.format);
-                        end = moment(val, this.format);
-                    }
-                    if (start !== null && end !== null) {
+                        if (split.length == 2) {
+                            start = moment(split[0], this.format);
+                            end = moment(split[1], this.format);
+                        } else if (this.singleDatePicker && val !== "") {
+                            start = moment(val, this.format);
+                            end = moment(val, this.format);
+                        }
+                        if (start !== null && end !== null) {
+                            this.startDate = start;
+                            this.endDate = end;
+                        }
+                    } else {
+                        var val1 = this.element.val();
+                        var val2 = this.relatedElement.val();
+                        start = moment(val1, this.format);
+                        end = moment(val2, this.format);
                         this.startDate = start;
                         this.endDate = end;
                     }
@@ -753,8 +788,15 @@
 
         updateInputText: function() {
             if (this.element.is('input') && !this.singleDatePicker) {
-                this.element.val(this.startDate.format(this.format) + this.separator + this.endDate.format(this.format));
-                this.element.trigger('change');
+                if (this.separatedInputs) {
+                    this.element.val(this.startDate.format(this.format));
+                    this.relatedElement.val(this.endDate.format(this.format));
+                    this.element.trigger('change');
+                    this.relatedElement.trigger('change');
+                } else {
+                    this.element.val(this.startDate.format(this.format) + this.separator + this.endDate.format(this.format));
+                    this.element.trigger('change');
+                }
             } else if (this.element.is('input')) {
                 this.element.val(this.endDate.format(this.format));
                 this.element.trigger('change');
