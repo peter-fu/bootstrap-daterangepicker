@@ -110,6 +110,12 @@ Options may also be set using HTML5 data attributes. For example, timePicker="tr
 
 `parentEl`: (string) jQuery selector of the parent element that the date range picker will be added to, if not provided this will be `'body'`
 
+`outsideClickCancel`:  (boolean) Cancel the changes made to the date range picker when click outside, instead of applying the changes, default as `true`
+
+`separatedInputs`:  (boolean) Use two inputs for start date and end date instead of one (AKA separate-inputs mode), specify the end date input via the `relatedElements` option
+
+`relatedElements`: (string or object) jQuery selector/DOM element/jQuery object of the end date input, used only in separate-inputs mode
+
 ## Functions
 
 Several functions are provided for updating the picker's option and state after initialization:
