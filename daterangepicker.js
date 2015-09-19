@@ -1216,6 +1216,26 @@
                         cname += ' today ';
                     }
 
+                    var dateStr = calendar[row][col].toString(this.format);
+                    var hoverTitle = date; // hover title AKA native tooltip
+                    var isMarkedAsWorkingDay = $.inArray(date, this.workingDays) > -1;
+                    var isWeekendOrHoliday = false;
+                    // Add class to weekend
+                    if ((col == 0 || col == 6)) {
+                        isWeekendOrHoliday = true;
+                        cname += ' weekend';
+                    }
+                    // Add class to holiday
+                    var holiday = this.holidays[date]; // Non-annual holiday
+                    if (!holiday) {
+                        holiday = this.holidays[date.substr(0, 5)]; // Annual holiday
+                    }
+                    if (holiday) {
+                        isWeekendOrHoliday = true;
+                        hoverTitle = holiday;
+                        cname += ' holiday';
+                    }
+
                     if ((minDate && calendar[row][col].isBefore(minDate, 'day')) || (maxDate && calendar[row][col].isAfter(maxDate, 'day'))) {
                         cname = ' off disabled ';
                     } else if (calendar[row][col].format('YYYY-MM-DD') == selected.format('YYYY-MM-DD')) {
@@ -1227,13 +1247,15 @@
                             cname += ' end-date ';
                         }
                     } else if (calendar[row][col] >= this.startDate && calendar[row][col] <= this.endDate) {
-                        cname += ' in-range ';
+                        if (!isWeekendOrHoliday || markedAsWorkingDay) {
+                            cname += ' in-range ';
+                        }
                         if (calendar[row][col].isSame(this.startDate)) { cname += ' start-date '; }
                         if (calendar[row][col].isSame(this.endDate)) { cname += ' end-date '; }
                     }
 
                     var title = 'r' + row + 'c' + col;
-                    html += '<td class="' + cname.replace(/\s+/g, ' ').replace(/^\s?(.*?)\s?$/, '$1') + '" data-title="' + title + '">' + calendar[row][col].date() + '</td>';
+                    html += '<td class="' + cname.replace(/\s+/g, ' ').replace(/^\s?(.*?)\s?$/, '$1') + '" data-title="' + title + '"' + '" title="' + hoverTitle + '">' + calendar[row][col].date() + '</td>';
                 }
                 html += '</tr>';
             }
