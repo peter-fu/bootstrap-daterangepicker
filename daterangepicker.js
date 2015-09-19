@@ -131,6 +131,7 @@
             this.timePicker12Hour = true;
             this.autoApply = false;
             this.singleDatePicker = false;
+            this.outsideClickCancel = true;
             this.ranges = {};
 
             this.opens = 'right';
@@ -269,6 +270,10 @@
                 if (this.singleDatePicker) {
                     this.endDate = this.startDate.clone();
                 }
+            }
+
+            if (typeof options.outsideClickCancel === 'boolean') {
+                this.outsideClickCancel = options.outsideClickCancel;
             }
 
             if (typeof options.timePicker === 'boolean') {
@@ -661,7 +666,11 @@
                 target.closest(this.container).length ||
                 target.closest('.calendar-date').length
                 ) return;
-            this.hide();
+            if (this.outsideClickCancel) {
+                this.clickCancel(e);
+            } else {
+                this.hide();
+            }
         },
 
         hide: function (e) {
