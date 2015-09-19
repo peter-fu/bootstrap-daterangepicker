@@ -146,6 +146,7 @@
             this.singleDatePicker = false;
             this.outsideClickCancel = true;
             this.separatedInputs = false;
+            this.enableWorkingDays = false;
             this.ranges = {};
 
             if (typeof options.separatedInputs === 'boolean') {
@@ -154,8 +155,27 @@
                     if (options.relatedElement) {
                         this.relatedElement = $(options.relatedElement);
                     }
-                    if (this.element.length > 0 && (!this.relatedElement || this.relatedElement.length == 0)) {
+                    if (!this.relatedElement || this.relatedElement.length == 0) {
                         throw new Error('Related element must exist in separated-inputs mode.');
+                    }
+                }
+            }
+
+            if (typeof options.enableWorkingDays === 'boolean') {
+                this.enableWorkingDays = options.enableWorkingDays;
+                if (this.enableWorkingDays) {
+                    if (options.workingDaysElement) {
+                        this.workingDaysElement = $(options.workingDaysElement);
+                    }
+                    if (!this.workingDaysElement || this.workingDaysElement.length == 0) {
+                        throw new Error('Working days element must exist if options.enableWorkingDays is set to true.');
+                    }
+                    this.holidays = options.holidays || {};
+                    var days = this.workingDaysElement.val();
+                    if (days) {
+                        this.workingDays = days.split(',');
+                    } else {
+                        this.workingDays = [];
                     }
                 }
             }
@@ -1216,24 +1236,28 @@
                         cname += ' today ';
                     }
 
-                    var dateStr = calendar[row][col].toString(this.format);
-                    var hoverTitle = date; // hover title AKA native tooltip
-                    var isMarkedAsWorkingDay = $.inArray(date, this.workingDays) > -1;
+                    var dateStr = calendar[row][col].format(this.format);
+                    var hoverTitle = dateStr; // hover title AKA native tooltip
+                    var isMarkedAsWorkingDay = false;
                     var isWeekendOrHoliday = false;
-                    // Add class to weekend
-                    if ((col == 0 || col == 6)) {
-                        isWeekendOrHoliday = true;
-                        cname += ' weekend';
-                    }
-                    // Add class to holiday
-                    var holiday = this.holidays[date]; // Non-annual holiday
-                    if (!holiday) {
-                        holiday = this.holidays[date.substr(0, 5)]; // Annual holiday
-                    }
-                    if (holiday) {
-                        isWeekendOrHoliday = true;
-                        hoverTitle = holiday;
-                        cname += ' holiday';
+                    if (this.enableWorkingDays) {
+                        isMarkedAsWorkingDay = $.inArray(dateStr, this.workingDays) > -1;
+                        isWeekendOrHoliday = false;
+                        // Add class to weekend
+                        if ((col == 0 || col == 6)) {
+                            isWeekendOrHoliday = true;
+                            cname += ' weekend';
+                        }
+                        // Add class to holiday
+                        var holiday = this.holidays[dateStr]; // Non-annual holiday
+                        if (!holiday) {
+                            holiday = this.holidays[dateStr.substr(0, 5)]; // Annual holiday
+                        }
+                        if (holiday) {
+                            isWeekendOrHoliday = true;
+                            hoverTitle = holiday;
+                            cname += ' holiday';
+                        }
                     }
 
                     if ((minDate && calendar[row][col].isBefore(minDate, 'day')) || (maxDate && calendar[row][col].isAfter(maxDate, 'day'))) {
@@ -1247,7 +1271,11 @@
                             cname += ' end-date ';
                         }
                     } else if (calendar[row][col] >= this.startDate && calendar[row][col] <= this.endDate) {
-                        if (!isWeekendOrHoliday || markedAsWorkingDay) {
+                        if (this.enableWorkingDays) {
+                            if (!isWeekendOrHoliday || isMarkedAsWorkingDay) {
+                                cname += ' in-range ';
+                            }
+                        } else {
                             cname += ' in-range ';
                         }
                         if (calendar[row][col].isSame(this.startDate)) { cname += ' start-date '; }

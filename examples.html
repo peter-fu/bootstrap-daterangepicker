@@ -53,8 +53,8 @@
                  <fieldset>
                   <div class="control-group">
                     <div class="controls">
-                      <input type="text" style="width: 200px; display: inline;" name="reservation" id="bdrp-si-start" class="form-control" value="03/18/2013" />
-                      <input type="text" style="width: 200px; display: inline;" name="reservation" id="bdrp-si-end" class="form-control" value="03/23/2013" />
+                      <input type="text" style="width: 200px; display: inline;" name="startDate" id="drp-si-start" class="form-control" value="03/18/2013" />
+                      <input type="text" style="width: 200px; display: inline;" name="endDate" id="drp-si-end" class="form-control" value="03/23/2013" />
                     </div>
                   </div>
                  </fieldset>
@@ -62,7 +62,33 @@
 
                <script type="text/javascript">
                $(document).ready(function() {
-                  $('#bdrp-si-start').daterangepicker({separatedInputs: true, relatedElement: $('#bdrp-si-end')}, function(start, end, label) {
+                  $('#drp-si-start').daterangepicker({separatedInputs: true, relatedElement: $('#drp-si-end')}, function(start, end, label) {
+                    console.log(start.toISOString(), end.toISOString(), label);
+                  });
+               });
+               </script>
+
+            </div>
+
+
+            <h4>Working days + Separated Inputs</h4>
+            <div class="well">
+
+               <form class="form-horizontal">
+                 <fieldset>
+                  <div class="control-group">
+                    <div class="controls">
+                      <input type="text" style="width: 200px; display: inline;" name="startDate" id="drp-si-wd-start" class="form-control" value="03/18/2013" />
+                      <input type="text" style="width: 200px; display: inline;" name="endDate" id="drp-si-wd-end" class="form-control" value="03/23/2013" />
+                      <input type="text" style="width: 200px; display: inline;" name="workingDays" id="drp-si-wd-working-days" class="form-control" value="" />
+                    </div>
+                  </div>
+                 </fieldset>
+               </form>
+
+               <script type="text/javascript">
+               $(document).ready(function() {
+                  $('#drp-si-wd-start').daterangepicker({separatedInputs: true, relatedElement: $('#drp-si-wd-end'), enableWorkingDays: true, workingDaysElement: $('#drp-si-wd-working-days')}, function(start, end, label) {
                     console.log(start.toISOString(), end.toISOString(), label);
                   });
                });
