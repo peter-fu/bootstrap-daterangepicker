@@ -43,6 +43,8 @@
         //tracks visible state
         this.isShowing = false;
 
+        this._isInSelectWorkingDaysMode = false;
+
         //create the picker HTML object
         var DRPTemplate = '<div class="daterangepicker dropdown-menu">' +
                 '<div class="calendar first left"></div>' +
@@ -59,6 +61,15 @@
                     '</div>' +
                     '<button class="applyBtn" disabled="disabled" type="button"></button>&nbsp;' +
                     '<button class="cancelBtn" type="button"></button>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="extra">' +
+                  '<div class="btn-group pull-left"><span class="timezone label label-info"></span></div>' +
+                  '<div class="btn-group pull-right">' +
+                    '<a class="btn cancelBtn">Cancel</a>' +
+                    '<a class="btn toggleModeBtn disabled" rel="selectStartAndEndDates">Start/end days</a>' +
+                    '<a class="btn toggleModeBtn" rel="selectWorkingDays">Working days</a>' +
+                    '<a class="btn applyBtn" disabled="disabled">Save</a>' +
                   '</div>' +
                 '</div>' +
               '</div>';
@@ -87,15 +98,27 @@
             .on('change.daterangepicker', 'select.monthselect', $.proxy(this.updateMonthYear, this))
             .on('change.daterangepicker', 'select.hourselect,select.minuteselect,select.secondselect,select.ampmselect', $.proxy(this.updateTime, this));
 
-        this.container.find('.ranges')
-            .on('click.daterangepicker', 'button.applyBtn', $.proxy(this.clickApply, this))
-            .on('click.daterangepicker', 'button.cancelBtn', $.proxy(this.clickCancel, this))
-            .on('click.daterangepicker', '.daterangepicker_start_input,.daterangepicker_end_input', $.proxy(this.showCalendars, this))
-            .on('change.daterangepicker', '.daterangepicker_start_input,.daterangepicker_end_input', $.proxy(this.inputsChanged, this))
-            .on('keydown.daterangepicker', '.daterangepicker_start_input,.daterangepicker_end_input', $.proxy(this.inputsKeydown, this))
-            .on('click.daterangepicker', 'li', $.proxy(this.clickRange, this))
-            .on('mouseenter.daterangepicker', 'li', $.proxy(this.enterRange, this))
-            .on('mouseleave.daterangepicker', 'li', $.proxy(this.updateFormInputs, this));
+        if(!this.enableWorkingDays) {
+            this.container.find('.extra').hide();
+            this.container.find('.ranges')
+                .on('click.daterangepicker', 'button.applyBtn', $.proxy(this.clickApply, this))
+                .on('click.daterangepicker', 'button.cancelBtn', $.proxy(this.clickCancel, this))
+                .on('click.daterangepicker', '.daterangepicker_start_input,.daterangepicker_end_input', $.proxy(this.showCalendars, this))
+                .on('change.daterangepicker', '.daterangepicker_start_input,.daterangepicker_end_input', $.proxy(this.inputsChanged, this))
+                .on('keydown.daterangepicker', '.daterangepicker_start_input,.daterangepicker_end_input', $.proxy(this.inputsKeydown, this))
+                .on('click.daterangepicker', 'li', $.proxy(this.clickRange, this))
+                .on('mouseenter.daterangepicker', 'li', $.proxy(this.enterRange, this))
+                .on('mouseleave.daterangepicker', 'li', $.proxy(this.updateFormInputs, this));
+        } else {
+            this.container.find('.ranges').hide();
+            this.container.find('.extra')
+                .on('click.daterangepicker', 'a.applyBtn', $.proxy(this.clickApply, this))
+                .on('click.daterangepicker', 'a.cancelBtn', $.proxy(this.clickCancel, this))
+                .on('click.daterangepicker', '.toggleModeBtn', $.proxy(this.clickToggleMode, this));
+            if (this.hideToggleModeButtons) {
+                this.container.find('.extra .toggleModeBtn').hide();
+            }
+        }
 
         if (this.element.is('input')) {
             this.element.on({
@@ -147,6 +170,7 @@
             this.outsideClickCancel = true;
             this.separatedInputs = false;
             this.enableWorkingDays = false;
+            this.hideToggleModeButtons = false;
             this.ranges = {};
 
             if (typeof options.separatedInputs === 'boolean') {
@@ -180,6 +204,10 @@
                 }
             }
 
+            if (typeof options.hideToggleModeButtons === 'boolean') {
+                this.hideToggleModeButtons = options.hideToggleModeButtons;
+            }
+
             this.opens = 'right';
             if (this.element.hasClass('pull-right'))
                 this.opens = 'left';
@@ -191,6 +219,7 @@
             this.buttonClasses = ['btn', 'btn-small btn-sm'];
             this.applyClass = 'btn-success';
             this.cancelClass = 'btn-default';
+            this.toggleModeClass = 'btn-warning';
 
             this.format = 'MM/DD/YYYY';
             this.separator = ' - ';
@@ -244,6 +273,9 @@
 
             if (typeof options.cancelClass === 'string')
                 this.cancelClass = options.cancelClass;
+
+            if (typeof options.toggleModeClass === 'string')
+                this.toggleModeClass = options.toggleModeClass;
 
             if (typeof options.dateLimit === 'object')
                 this.dateLimit = options.dateLimit;
@@ -395,6 +427,9 @@
             	}
               this.startDate.utcOffset(this.timeZone);
               this.endDate.utcOffset(this.timeZone);
+              if (typeof options.timeZoneHumanReadableName === 'string') {
+                  this.timeZoneHumanReadableName = options.timeZoneHumanReadableName;
+              }
             } else {
                 this.timeZone = moment(this.startDate).utcOffset();
             }
@@ -513,7 +548,7 @@
             //apply CSS classes and labels to buttons
             var c = this.container;
             $.each(this.buttonClasses, function (idx, val) {
-                c.find('button').addClass(val);
+                c.find('button, a.btn').addClass(val);
             });
             this.container.find('.daterangepicker_start_input label').html(this.locale.fromLabel);
             this.container.find('.daterangepicker_end_input label').html(this.locale.toLabel);
@@ -521,8 +556,11 @@
                 this.container.find('.applyBtn').addClass(this.applyClass);
             if (this.cancelClass.length)
                 this.container.find('.cancelBtn').addClass(this.cancelClass);
+            if (this.toggleModeClass.length)
+                this.container.find('.toggleModeBtn').addClass(this.toggleModeClass);
             this.container.find('.applyBtn').html(this.locale.applyLabel);
             this.container.find('.cancelBtn').html(this.locale.cancelLabel);
+            this.container.find('.timezone').html(this.timeZoneHumanReadableName || this.timeZone);
         },
 
         setStartDate: function(startDate) {
@@ -570,9 +608,9 @@
             this.container.find('input[name=daterangepicker_end]').val(this.endDate.format(this.format));
 
             if (this.startDate.isSame(this.endDate) || this.startDate.isBefore(this.endDate)) {
-                this.container.find('button.applyBtn').removeAttr('disabled');
+                this.container.find('.applyBtn').removeAttr('disabled');
             } else {
-                this.container.find('button.applyBtn').attr('disabled', 'disabled');
+                this.container.find('.applyBtn').attr('disabled', 'disabled');
             }
         },
 
@@ -943,9 +981,18 @@
                 startDate = endDate.clone();
             }
 
+            var cell = $(e.target);
+            if (cell.hasClass('holiday') || cell.hasClass('weekend')) {
+                if (this._isInSelectWorkingDaysMode && !cell.hasClass('in-range')) {
+                    if (!confirm('The day you are selecting is a weekend/holiday. Are you sure?')) {
+                        return;
+                    }
+                }
+            }
+
             cal.find('td').removeClass('active');
 
-            $(e.target).addClass('active');
+            cell.addClass('active');
 
             this.setCustomDates(startDate, endDate);
 
@@ -970,6 +1017,27 @@
             this.updateCalendars();
             this.hide();
             this.element.trigger('cancel.daterangepicker', this);
+        },
+
+        clickToggleMode : function(e) {
+            if (!this.enableWorkingDays) {
+                return;
+            }
+    
+            if (e && $(e.target).length > 0 && $(e.target).hasClass('disabled')) {
+                return;
+            }
+    
+            var tmSsaedBtn = this.container.find('.toggleModeBtn[rel=selectStartAndEndDates]');
+            var tmSwdBtn = this.container.find('.toggleModeBtn[rel=selectWorkingDays]');
+            if (this._isInSelectWorkingDaysMode) {
+                tmSsaedBtn.addClass('disabled');
+                tmSwdBtn.removeClass('disabled');
+            } else {
+                tmSsaedBtn.removeClass('disabled');
+                tmSwdBtn.addClass('disabled');
+            }
+            this._isInSelectWorkingDaysMode = !this._isInSelectWorkingDaysMode;
         },
 
         updateMonthYear: function (e) {
